@@ -2,7 +2,8 @@
 
 This is a template project for using the [Godot Kotlin JVM module](https://github.com/utopia-rise/godot-kotlin-jvm) with Scala.
 
-Currently, there is no official release of the Scala support module, but a working version exists in the `develop` branch.
+Currently, the **Godot Kotlin JVM module** itself does not provide an official release of Scala support.  
+However, a working version is available in its `develop` branch.
 
 The **`v1.0.0` release** of this template contains:
 - A Godot build with Scala support
