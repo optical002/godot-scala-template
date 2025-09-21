@@ -1,0 +1,5 @@
+.godot/
+.gradle/
+.idea/
+build/
+java_pid*.hprof
