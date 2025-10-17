@@ -10,6 +10,24 @@ trait GodotBuildModule extends ScalaModule {
   override def repositoriesTask = T.task {
     super.repositoriesTask() ++ Seq(MavenRepository(s"file://${System.getProperty("user.home")}/.m2/repository"))
   }
+  override def scalacOptions = T {
+    super.scalacOptions() ++ Seq(
+      "-Xmax-inlines", "64"
+    )
+  }
+  override def forkArgs = T {
+    super.forkArgs() ++ Seq(
+      "-Xms8G",
+      "-Xmx16G",
+      "-XX:+UseG1GC",
+      "-XX:MaxGCPauseMillis=50",
+      "-XX:ParallelGCThreads=16",
+      "-XX:ConcGCThreads=4",
+      "-XX:ReservedCodeCacheSize=2G",
+      "-XX:+UseStringDeduplication",
+      "-Dscala.concurrent.context.numThreads=16"
+    )
+  }
   
   def godotKotlinVersion = "0.13.0-4.4.1-afac9a3-SNAPSHOT"
   def kotlinVersion = "1.9.0"
@@ -260,6 +278,67 @@ object ClassGraphRunner {
   }
   
   def build = T { godotBuild() }
+  
+  def packageDevJar: T[PathRef] = T {
+    val compiledClassesRef = compile().classes
+    val compiledClasses = compiledClassesRef.path
+    val dest = T.dest / "main.jar"
+    val jarDir = T.dest / "jar-contents"
+    os.makeDir.all(jarDir)
+    if (os.exists(compiledClasses) && os.isDir(compiledClasses)) {
+      os.walk(compiledClasses).foreach { file =>
+        if (!os.isDir(file)) {
+          val rel = file.relativeTo(compiledClasses)
+          val target = jarDir / rel
+          os.makeDir.all(target / os.up)
+          os.copy.over(file, target, createFolders = true)
+        }
+      }
+    }
+    val resourcesDir = millSourcePath / "src" / "main" / "resources"
+    if (os.exists(resourcesDir) && os.isDir(resourcesDir)) {
+      os.walk(resourcesDir).foreach { file =>
+        if (!os.isDir(file)) {
+          val rel = file.relativeTo(resourcesDir)
+          val target = jarDir / rel
+          os.makeDir.all(target / os.up)
+          os.copy.over(file, target, createFolders = true)
+        }
+      }
+    }
+    val excludePatterns = Seq("kotlin-stdlib", "godot-library", "godot-api-library", "godot-core-library", 
+                              "godot-extension-library", "godot-internal-library", "godot-build-props", "common")
+    runClasspath().map(_.path).filter { p =>
+      os.exists(p) && p.ext == "jar" && !excludePatterns.exists(pattern => p.toString.contains(pattern))
+    }.foreach { jar => os.proc("jar", "xf", jar.toString).call(cwd = jarDir) }
+    val metaInf = jarDir / "META-INF"
+    if (os.exists(metaInf)) {
+      os.list(metaInf).filter(f => f.last.endsWith(".SF") || f.last.endsWith(".DSA") || f.last.endsWith(".RSA")).foreach(os.remove)
+    }
+    os.proc("jar", "cf", dest.toString, "-C", jarDir.toString, ".").call()
+    PathRef(dest)
+  }
+  
+  def dev: T[PathRef] = T {
+    val compiledClasses = compile().classes.path
+    val projectJvmDir = millSourcePath / "jvm"
+    val mainJar = projectJvmDir / "main.jar"
+    if (!os.exists(mainJar)) {
+      println("[Godot] First run: building full JAR...")
+      val jar = packageDevJar()
+      if (!os.exists(projectJvmDir)) os.makeDir.all(projectJvmDir)
+      os.copy.over(jar.path, mainJar, createFolders = true)
+      os.copy.over(jar.path, projectJvmDir / s"${millSourcePath.last}.jar", createFolders = true)
+    } else {
+      println("[Godot] Incremental: updating classes in JAR...")
+      if (os.exists(compiledClasses) && os.isDir(compiledClasses)) {
+        os.proc("jar", "uf", mainJar.toString, "-C", compiledClasses.toString, ".").call()
+        os.copy.over(mainJar, projectJvmDir / s"${millSourcePath.last}.jar", createFolders = true)
+      }
+    }
+    println("[Godot] Dev build complete!")
+    PathRef(projectJvmDir)
+  }
   
   def cleanJvmDirectory: T[Unit] = T {
     val jvmDir = millSourcePath / "jvm"
