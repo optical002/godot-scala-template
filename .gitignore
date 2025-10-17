@@ -1,8 +1,16 @@
+# Godot
 .godot/
+
+# IDE
 .idea/
+*.iml
+
+# Build
 .kotlin/
 out/
 .mill/
-java_pid*.hprof
-jvm/
 .bsp/
+
+# Runtime
+jvm/
+java_pid*.hprof
