@@ -17,5 +17,5 @@ class HelloFromScala extends Node:
 
   @RegisterFunction
   override def _ready(): Unit =
-    GD.INSTANCE.print(s"Hello from scala!")
+    GD.INSTANCE.print("Hello from scala and mill!")
     catsCoreTest

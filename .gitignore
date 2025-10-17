@@ -1,6 +1,8 @@
 .godot/
-.gradle/
 .idea/
 .kotlin/
-build/
+out/
+.mill/
 java_pid*.hprof
+jvm/
+.bsp/
