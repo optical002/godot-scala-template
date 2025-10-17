@@ -2,6 +2,48 @@
 
 A Scala 3 project template for Godot Engine using Godot Kotlin JVM.
 
+## Prerequisites
+
+1. **Download required files:**
+   - This repository
+   - Godot game engine binary: `godot.linuxbsd.editor.x86_64.jvm.0.13.0` 
+   - Maven packages archive: `com.utopia-rise.zip` 
+
+2. **Install Maven packages**  
+   Extract `com.utopia-rise.zip` into your local Maven repository:
+   ```bash
+   unzip com.utopia-rise.zip -d ~/.m2/repository
+   ```
+
+3. **Build the project**
+   First build (mandatory for the first time):
+   ```bash
+   ./mill project.build
+   ```
+   
+   For development (incremental builds):
+   ```bash
+   ./mill project.dev
+   ```
+   
+   For watch mode (auto-rebuilds on file changes):
+   ```bash
+   ./mill -w project.dev
+   ```
+
+4. **Open the project in Godot**  
+   Launch the Godot editor `godot.linuxbsd.editor.x86_64.jvm.0.13.0` and open this repository as a project.
+
+5. **Run the demo scene**  
+   Open `node_2d.tscn` in the editor and press F6 to play the current scene.
+
+6. **Check the output**  
+   The log should show:
+   ```
+   Hello from scala and mill!
+   ```
+
+
 ## Project Structure
 
 ### Build Files
