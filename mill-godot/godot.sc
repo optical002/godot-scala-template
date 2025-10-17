@@ -332,8 +332,19 @@ object ClassGraphRunner {
     } else {
       println("[Godot] Incremental: updating classes in JAR...")
       if (os.exists(compiledClasses) && os.isDir(compiledClasses)) {
-        os.proc("jar", "uf", mainJar.toString, "-C", compiledClasses.toString, ".").call()
-        os.copy.over(mainJar, projectJvmDir / s"${millSourcePath.last}.jar", createFolders = true)
+        try {
+          os.proc("jar", "uf", mainJar.toString, "-C", compiledClasses.toString, ".").call()
+          Thread.sleep(100)
+          os.remove(projectJvmDir / s"${millSourcePath.last}.jar")
+          os.copy(mainJar, projectJvmDir / s"${millSourcePath.last}.jar", createFolders = true)
+        } catch {
+          case e: Exception =>
+            println(s"[Godot] Warning: ${e.getMessage}")
+            println("[Godot] Rebuilding JAR from scratch...")
+            val jar = packageDevJar()
+            os.copy.over(jar.path, mainJar, createFolders = true)
+            os.copy.over(jar.path, projectJvmDir / s"${millSourcePath.last}.jar", createFolders = true)
+        }
       }
     }
     println("[Godot] Dev build complete!")
