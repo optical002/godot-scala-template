@@ -7,7 +7,7 @@ A Scala 3 project template for Godot Engine using Godot Kotlin JVM.
 ### Build Files
 
 - **`build.sc`** - Minimal project configuration (dependencies, Scala version)
-- **`godot.sc`** - Reusable Godot build module with all Godot-specific logic
+- **`mill-godot/godot.sc`** - Reusable Godot build module with all Godot-specific logic
 - **`src/main/scala/`** - Your Scala game code
 - **`src/main/resources/`** - Project resources
 - **`jvm/`** - Output directory for JARs and JRE (used by Godot)
@@ -17,20 +17,23 @@ A Scala 3 project template for Godot Engine using Godot Kotlin JVM.
 ### Build Commands
 
 ```bash
-# Compile Scala code
-./mill project.compile
-
-# Full build (compile, package JARs, setup JVM directory)
+# Full build (first time, or when adding new @RegisterClass)
 ./mill project.build
 
-# Clean build artifacts
-./mill clean
+# Fast incremental build (code changes only)
+./mill project.dev
 
-# Clean JVM directory
-./mill project.cleanJvmDirectory
+# Watch mode (auto-rebuild on file save)
+./mill -w project.dev
+
+# Compile only
+./mill project.compile
+
+# Clean everything
+./mill clean
 ```
 
-**Important:** Always use `./mill` (local wrapper), not system `mill` command.
+**Important:** Use `./mill` (local wrapper), not system `mill`.
 
 ## Project Configuration
 
@@ -38,7 +41,7 @@ The `build.sc` file contains only your project-specific settings:
 
 ```scala
 object project extends ScalaModule with GodotBuildModule {
-  def scalaVersion = "3.6.3"
+  def scalaVersion = "3.7.3"
   
   override def ivyDeps = T {
     Agg(
@@ -67,7 +70,7 @@ override def ivyDeps = T {
 Update the `scalaVersion` in `build.sc`:
 
 ```scala
-def scalaVersion = "3.6.3"  // or "3.5.2", "3.4.3", etc.
+def scalaVersion = "3.7.3"  // or "3.5.2", "3.4.3", etc.
 ```
 
 ## Godot Integration
@@ -107,17 +110,16 @@ When you run `./mill project.build`:
 2. Your Scala classes will be available as Godot nodes
 3. Attach them to scenes like any other node type
 
-## Advanced: Reusing the Godot Build Module
+## Advanced: Reusing the Build Module
 
-The `godot.sc` file is a reusable Mill module. You can import it in other projects:
+The `mill-godot/godot.sc` module is reusable in other projects:
 
 ```scala
-import $file.^.godot  // if in a subdirectory
+import $file.`path-to`.`mill-godot`.godot
 import godot.GodotBuildModule
 
 object myGame extends ScalaModule with GodotBuildModule {
-  def scalaVersion = "3.6.3"
-  // your dependencies...
+  def scalaVersion = "3.7.3"
 }
 ```
 
@@ -148,7 +150,8 @@ Example for enabling remote debugging:
 ```
 godot-scala-template/
 ├── build.sc                      # Project configuration
-├── godot.sc                      # Godot build module (reusable)
+├── mill-godot/
+│   └── godot.sc                  # Godot build module (reusable)
 ├── godot_kotlin_configuration.json  # Runtime config
 ├── src/
 │   └── main/
@@ -191,16 +194,29 @@ Make sure your Scala files are in `src/main/scala/` (Maven layout).
 
 ## Development Workflow
 
-1. Write Scala code in `src/main/scala/`
-2. Run `./mill project.build`
-3. Test in Godot Editor
-4. Iterate
+### Initial Setup
+```bash
+./mill project.build  # First build (~17s)
+```
 
-The build system automatically:
-- Detects source changes
-- Recompiles affected classes
-- Regenerates JARs
-- Copies to `jvm/` directory
+### Development Iteration
+```bash
+# Option 1: Manual rebuild after changes
+./mill project.dev  # ~6-7s (incremental)
+
+# Option 2: Watch mode (recommended)
+./mill -w project.dev  # Auto-rebuild on save (~2-3s)
+```
+
+### When to Use Which Command
+
+| Command | When to Use | Time |
+|---------|-------------|------|
+| `./mill project.build` | First build, adding new `@RegisterClass` | ~17s |
+| `./mill project.dev` | Code changes only | ~6-7s |
+| `./mill -w project.dev` | Continuous development | ~2-3s |
+
+**Note:** Use `build` when adding new Godot classes, `dev` for code changes only.
 
 ## License
 
